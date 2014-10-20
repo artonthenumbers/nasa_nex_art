@@ -1,0 +1,70 @@
+#!/usr/bin/env python
+
+import datetime, subprocess, os
+from numpy import *
+from pylab import *
+from mpl_toolkits.basemap import Basemap
+import netCDF4 
+
+
+
+
+
+#-----------------------------------------------------------------------
+def make_nexdcp_figure(fin, fnameout, mnth, titletxt):
+   data = array(fin.variables['tasmax'][mnth,::10,::10])
+   lat = array(fin.variables['lat'][::10])
+   lon = array(fin.variables['lon'][::10])-360
+
+   data_masked = ma.masked_where(data==1.*e+20, data-273.15)
+
+   #savetxt(csvfname, ma.masked_where(fin.variables['tasmax'][mnth,::10,::10]==1.*e+20, data-273.15) , delimiter=",")
+
+   figure( figsize=(11,6) )
+   subplots_adjust(left=0.03, right=0.97, top=0.95, bottom=0.0)
+   bmap = Basemap(lon.min(), lat.min(), lon.max(), lat.max(),resolution='l')
+
+   data_min, data_max  = -10, 35
+   bmap.imshow(data_masked, vmin=data_min, vmax=data_max, origin='lower', cmap=cm.get_cmap('jet',18))
+
+   bmap.drawcountries()
+   bmap.drawstates()
+   bmap.drawcoastlines()
+   title(titletxt)
+   colorbar(drawedges=True, ticks=linspace(data_min, data_max, 10), orientation='horizontal', extend='both', pad=0.05, shrink=0.8).set_label(u'\N{DEGREE SIGN}C')
+   savefig(fnameout)
+#make_nexdcp_figure
+
+#-----------------------------------------------------------------------
+#def make_animation():
+   #cmd = ['convert', '-delay', '20', '-loop', '0', './png/*01.png', 'animation_01.gif']
+   #subprocess.call(cmd)
+#make_animation
+
+
+
+#2-----------------------------------------------------------------------
+if __name__ == '__main__':
+
+   i = [26,45,60,85]
+   for c in i:
+      s3fname = '/media/nasanex/NEX-DCP30/NEX-quartile/rcp'+str(c)+'/mon/atmos/tasmax/r1i1p1/v1.0/CONUS/tasmax_ens-avg_amon_rcp'+str(c)+'_CONUS_203601-204012.nc'
+
+      fin = netCDF4.Dataset('/media/nasanex/NEX-DCP30/NEX-quartile/rcp'+str(c)+'/mon/atmos/tasmax/r1i1p1/v1.0/CONUS/tasmax_ens-avg_amon_rcp'+str(c)+'_CONUS_203601-204012.nc')
+        
+      for m in range(0,12):
+         d = datetime.datetime(2040, m+1, 15)
+         fnameout = "./test/tasmax_ens-avg_amon_rcp"+str(c)+"_CONUS_203601-204012.2040%02d.png" % (m+1)
+            
+         t = 'RCP' +str(c)+' Ensemble maximum average temperature in %s' % d.strftime("%B %Y").rjust(13)
+         print "Working on RCP"+str(c)+", 2040:", t, '...'
+         make_nexdcp_figure(fin, fnameout, m, t)
+         #done
+
+   fin.close()  
+      
+   #print "Working on animation..."
+   #make_animation()
+#__main__
+
+
